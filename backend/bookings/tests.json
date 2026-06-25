@@ -1,0 +1,28 @@
+{
+  "tests": [
+    {
+      "name": "Create booking",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "name": "Тест Гость",
+        "phone": "+7 900 000 00 00",
+        "date": "2026-07-01",
+        "time": "12:00",
+        "guests": 2,
+        "notes": "У окна"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {"success": true},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Missing fields",
+      "method": "POST",
+      "path": "/",
+      "body": {"name": "Без телефона"},
+      "expectedStatus": 400,
+      "bodyMatcher": "partial"
+    }
+  ]
+}

@@ -10,6 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+
+const BOOKINGS_URL = 'https://functions.poehali.dev/45a6556b-c68f-4595-97de-42e4382a4806';
 
 const HERO = 'https://cdn.poehali.dev/projects/9b9ed1f4-e193-4471-895e-fd1dfaa0de72/files/40b2ecba-e761-464d-881f-c5842104d98f.jpg';
 const ABOUT_IMG = 'https://cdn.poehali.dev/projects/9b9ed1f4-e193-4471-895e-fd1dfaa0de72/files/de478500-516f-45a4-a410-cd32e5024474.jpg';
@@ -63,6 +66,32 @@ function scrollTo(id: string) {
 
 export default function Index() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { toast } = useToast();
+  const [form, setForm] = useState({ name: '', phone: '', date: '', time: '', guests: '', notes: '' });
+  const [sending, setSending] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name || !form.phone || !form.date || !form.time) {
+      toast({ title: 'Заполните поля', description: 'Имя, телефон, дата и время обязательны', variant: 'destructive' });
+      return;
+    }
+    setSending(true);
+    try {
+      const res = await fetch(BOOKINGS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, guests: form.guests || '1' }),
+      });
+      if (!res.ok) throw new Error();
+      toast({ title: 'Заявка отправлена!', description: 'Мы перезвоним для подтверждения брони.' });
+      setForm({ name: '', phone: '', date: '', time: '', guests: '', notes: '' });
+    } catch {
+      toast({ title: 'Ошибка', description: 'Не удалось отправить заявку. Попробуйте ещё раз.', variant: 'destructive' });
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -262,14 +291,27 @@ export default function Index() {
               <h2 className="font-display text-4xl md:text-5xl font-semibold mt-3">Забронируйте столик</h2>
               <p className="text-muted-foreground mt-2 text-sm">Оставьте заявку — мы перезвоним для подтверждения</p>
             </div>
-            <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
-                <Input placeholder="Ваше имя" />
-                <Input placeholder="Телефон" type="tel" />
+                <Input
+                  placeholder="Ваше имя"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                />
+                <Input
+                  placeholder="Телефон"
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                />
               </div>
               <div className="grid sm:grid-cols-3 gap-4">
-                <Input type="date" />
-                <Select>
+                <Input
+                  type="date"
+                  value={form.date}
+                  onChange={(e) => setForm({ ...form, date: e.target.value })}
+                />
+                <Select value={form.time} onValueChange={(v) => setForm({ ...form, time: v })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Время" />
                   </SelectTrigger>
@@ -279,7 +321,7 @@ export default function Index() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Select>
+                <Select value={form.guests} onValueChange={(v) => setForm({ ...form, guests: v })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Гостей" />
                   </SelectTrigger>
@@ -290,9 +332,15 @@ export default function Index() {
                   </SelectContent>
                 </Select>
               </div>
-              <Textarea placeholder="Пожелания (необязательно)" rows={3} />
-              <Button type="submit" size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-full">
-                <Icon name="CalendarCheck" size={18} className="mr-2" /> Отправить заявку
+              <Textarea
+                placeholder="Пожелания (необязательно)"
+                rows={3}
+                value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              />
+              <Button type="submit" size="lg" disabled={sending} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-full">
+                <Icon name={sending ? 'Loader2' : 'CalendarCheck'} size={18} className={sending ? 'mr-2 animate-spin' : 'mr-2'} />
+                {sending ? 'Отправляем...' : 'Отправить заявку'}
               </Button>
             </form>
           </div>
